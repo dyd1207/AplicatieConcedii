@@ -44,7 +44,7 @@ model User {
 
 model Role {
   id    Int        @id @default(autoincrement())
-  code  String     @unique // ADMIN, SECRETARIAT, DIRECTOR_GENERAL, SEF_SECTOR_PONTATOR, USER
+  code  String     @unique // ANGAJAT, SECRETARIAT, SEF_STRUCTURA, DIRECTOR_ADJUNCT, DIRECTOR, ADMINISTRATOR
   name  String
   users UserRole[]
 }
@@ -76,13 +76,16 @@ model LeaveRequest {
   approvedById Int?
   approvedBy   User? @relation("ApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
   interruptedAt   DateTime?
   interruptedById Int?
   interruptedBy   User?     @relation("InterruptedBy", fields: [interruptedById], references: [id], onDelete: SetNull)
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([requesterId])
   @@index([status])
   @@index([type])
+  @@index([approvedById])
+  @@index([interruptedById])
 }

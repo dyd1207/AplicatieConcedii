@@ -1,16 +1,34 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 
+type LeaveType = "CO" | "COR";
+type RequestStatus = "DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED" | "CANCELLED" | "INTERRUPTED";
+
 @Injectable()
 export class LeaveRequestsService {
   constructor(private prisma: PrismaService) {}
 
-  async createDraft(userId: number, dto: { type: "CO" | "COR"; startDate: string; endDate: string; daysCount: number; reason?: string }) {
+  async createDraft(
+    userId: number,
+    dto: { type: LeaveType; startDate: string; endDate: string; daysCount: number; reason?: string }
+  ) {
+    if (!dto.type || !dto.startDate || !dto.endDate || !dto.daysCount) {
+      throw new BadRequestException("Câmpuri obligatorii lipsă.");
+    }
+    if (dto.daysCount <= 0) throw new BadRequestException("daysCount trebuie să fie > 0.");
+
+    const start = new Date(dto.startDate);
+    const end = new Date(dto.endDate);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      throw new BadRequestException("Format dată invalid.");
+    }
+    if (end < start) throw new BadRequestException("endDate nu poate fi înainte de startDate.");
+
     return this.prisma.leaveRequest.create({
       data: {
         type: dto.type,
-        startDate: new Date(dto.startDate),
-        endDate: new Date(dto.endDate),
+        startDate: start,
+        endDate: end,
         daysCount: dto.daysCount,
         reason: dto.reason,
         status: "DRAFT",
@@ -67,5 +85,73 @@ export class LeaveRequestsService {
         reason: reason ?? req.reason,
       },
     });
+  }
+
+  async list(
+    user: { sub: number; roles: string[] },
+    query: {
+      status?: RequestStatus;
+      type?: LeaveType;
+      from?: string; // YYYY-MM-DD
+      to?: string;   // YYYY-MM-DD
+      requesterId?: string | number;
+      page?: string | number;
+      pageSize?: string | number;
+    }
+  ) {
+    const page = Math.max(1, Number(query.page ?? 1));
+    const pageSize = Math.min(100, Math.max(1, Number(query.pageSize ?? 20)));
+    const skip = (page - 1) * pageSize;
+
+    const roles = user.roles || [];
+    const canSeeAll =
+      roles.includes("DIRECTOR") ||
+      roles.includes("DIRECTOR_ADJUNCT") ||
+      roles.includes("SECRETARIAT") ||
+      roles.includes("SEF_STRUCTURA");
+
+    const where: any = {};
+
+    // dacă nu are drepturi extinse, vede doar cererile lui
+    if (!canSeeAll) {
+      where.requesterId = user.sub;
+    } else if (query.requesterId) {
+      where.requesterId = Number(query.requesterId);
+    }
+
+    if (query.status) where.status = query.status;
+    if (query.type) where.type = query.type;
+
+    if (query.from || query.to) {
+      const dateFilter: any = {};
+      if (query.from) {
+        const d = new Date(query.from);
+        if (Number.isNaN(d.getTime())) throw new BadRequestException("Parametrul 'from' este invalid.");
+        dateFilter.gte = d;
+      }
+      if (query.to) {
+        const d = new Date(query.to);
+        if (Number.isNaN(d.getTime())) throw new BadRequestException("Parametrul 'to' este invalid.");
+        dateFilter.lte = d;
+      }
+      where.startDate = dateFilter;
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.leaveRequest.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: pageSize,
+        include: {
+          requester: { select: { id: true, username: true, fullName: true } },
+          approvedBy: { select: { id: true, username: true, fullName: true } },
+          interruptedBy: { select: { id: true, username: true, fullName: true } },
+        },
+      }),
+      this.prisma.leaveRequest.count({ where }),
+    ]);
+
+    return { page, pageSize, total, items };
   }
 }

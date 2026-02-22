@@ -1,4 +1,4 @@
-import { Body, Controller, Param, ParseIntPipe, Post, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 import { Roles } from "../auth/roles.decorator";
 import { RolesGuard } from "../auth/roles.guard";
@@ -10,8 +10,17 @@ import { CanApproveGuard } from "./can-approve.guard";
 export class LeaveRequestsController {
   constructor(private svc: LeaveRequestsService) {}
 
+  // Listare cu filtre + paginare
+  @Get()
+  list(@Req() req: any, @Query() query: any) {
+    return this.svc.list(req.user, query);
+  }
+
   @Post("draft")
-  createDraft(@Req() req: any, @Body() dto: { type: "CO" | "COR"; startDate: string; endDate: string; daysCount: number; reason?: string }) {
+  createDraft(
+    @Req() req: any,
+    @Body() dto: { type: "CO" | "COR"; startDate: string; endDate: string; daysCount: number; reason?: string }
+  ) {
     return this.svc.createDraft(req.user.sub, dto);
   }
 
