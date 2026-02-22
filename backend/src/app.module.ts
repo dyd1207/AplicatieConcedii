@@ -5,11 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { LeaveRequestsModule } from './leave-requests/leave-requests.module';
 
 @Module({
-  imports: [
-    PrismaModule,
-    AuthModule,
-    LeaveRequestsModule,
-  ],
+  imports: [PrismaModule, AuthModule, LeaveRequestsModule],
   controllers: [AppController],
 })
 export class AppModule {}
