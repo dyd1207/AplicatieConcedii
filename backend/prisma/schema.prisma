@@ -17,15 +17,17 @@ enum RequestStatus {
   APPROVED
   REJECTED
   CANCELLED
+  INTERRUPTED
 }
 
 model User {
-  id       Int     @id @default(autoincrement())
-  email    String  @unique
-  username String  @unique
-  fullName String
-  password String
-  isActive Boolean @default(true)
+  id                  Int            @id @default(autoincrement())
+  email               String         @unique
+  username            String         @unique
+  fullName            String
+  password            String
+  isActive            Boolean        @default(true)
+  interruptedRequests LeaveRequest[] @relation("InterruptedBy")
 
   // Inlocuitor optional
   substituteId  Int?
@@ -74,8 +76,11 @@ model LeaveRequest {
   approvedById Int?
   approvedBy   User? @relation("ApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  interruptedAt   DateTime?
+  interruptedById Int?
+  interruptedBy   User?     @relation("InterruptedBy", fields: [interruptedById], references: [id], onDelete: SetNull)
 
   @@index([requesterId])
   @@index([status])
