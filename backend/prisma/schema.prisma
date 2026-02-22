@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum LeaveType {
+  CO
+  COR
+}
+
+enum RequestStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
+  username String  @unique
+  fullName String
+  password String
+  isActive Boolean @default(true)
+
+  // Inlocuitor optional
+  substituteId  Int?
+  substitute    User?  @relation("UserSubstitute", fields: [substituteId], references: [id])
+  substitutedBy User[] @relation("UserSubstitute")
+
+  roles            UserRole[]
+  requests         LeaveRequest[] @relation("RequesterRequests")
+  approvedRequests LeaveRequest[] @relation("ApprovedBy")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Role {
+  id    Int        @id @default(autoincrement())
+  code  String     @unique // ADMIN, SECRETARIAT, DIRECTOR_GENERAL, SEF_SECTOR_PONTATOR, USER
+  name  String
+  users UserRole[]
+}
+
+model UserRole {
+  userId Int
+  roleId Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+model LeaveRequest {
+  id     Int           @id @default(autoincrement())
+  type   LeaveType
+  status RequestStatus @default(DRAFT)
+
+  startDate DateTime
+  endDate   DateTime
+  daysCount Int
+
+  reason String?
+
+  requesterId Int
+  requester   User @relation("RequesterRequests", fields: [requesterId], references: [id], onDelete: Cascade)
+
+  approvedById Int?
+  approvedBy   User? @relation("ApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([requesterId])
+  @@index([status])
+  @@index([type])
+}
