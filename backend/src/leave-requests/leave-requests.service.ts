@@ -1,12 +1,21 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { LeaveBalanceService } from "../leave-balance/leave-balance.service";
 
 type LeaveType = "CO" | "COR";
 type RequestStatus = "DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED" | "CANCELLED" | "INTERRUPTED";
 
+function diffDays(start: Date, end: Date): number {
+  const ms = end.getTime() - start.getTime();
+  return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
+}
+
 @Injectable()
 export class LeaveRequestsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly leaveBalanceService: LeaveBalanceService,
+  ) {}
 
   async createDraft(
     userId: number,
@@ -23,6 +32,11 @@ export class LeaveRequestsService {
       throw new BadRequestException("Format dată invalid.");
     }
     if (end < start) throw new BadRequestException("endDate nu poate fi înainte de startDate.");
+
+    // (opțional, recomandat) prevenim cereri pe ani diferiți pentru simplificare sold
+    if (start.getFullYear() !== end.getFullYear()) {
+      throw new BadRequestException("Cererea nu poate traversa ani diferiți (depune cereri separate).");
+    }
 
     return this.prisma.leaveRequest.create({
       data: {
@@ -49,14 +63,33 @@ export class LeaveRequestsService {
     });
   }
 
+  /**
+   * APPROVE: update cerere + consume zile din LeaveEntitlement (TX).
+   */
   async approve(approverId: number, requestId: number) {
-    const req = await this.prisma.leaveRequest.findUnique({ where: { id: requestId } });
-    if (!req) throw new NotFoundException("Cerere inexistentă.");
-    if (req.status !== "SUBMITTED") throw new BadRequestException("Doar cererile trimise pot fi aprobate.");
+    return this.prisma.$transaction(async (tx) => {
+      const req = await tx.leaveRequest.findUnique({ where: { id: requestId } });
+      if (!req) throw new NotFoundException("Cerere inexistentă.");
+      if (req.status !== "SUBMITTED") throw new BadRequestException("Doar cererile trimise pot fi aprobate.");
 
-    return this.prisma.leaveRequest.update({
-      where: { id: requestId },
-      data: { status: "APPROVED", approvedById: approverId },
+      const year = req.startDate.getFullYear();
+      if (year !== req.endDate.getFullYear()) {
+        throw new BadRequestException("Cererea nu poate traversa ani diferiți (depune cereri separate).");
+      }
+
+      const updated = await tx.leaveRequest.update({
+        where: { id: requestId },
+        data: { status: "APPROVED", approvedById: approverId },
+      });
+
+      await this.leaveBalanceService.consumeDaysTx(tx, {
+        userId: updated.requesterId,
+        year,
+        type: updated.type as LeaveType,
+        days: updated.daysCount,
+      });
+
+      return updated;
     });
   }
 
@@ -71,19 +104,40 @@ export class LeaveRequestsService {
     });
   }
 
+  /**
+   * INTERRUPT: calculează zile efective + refund restul (TX)
+   */
   async interrupt(interrupterId: number, requestId: number, reason?: string) {
-    const req = await this.prisma.leaveRequest.findUnique({ where: { id: requestId } });
-    if (!req) throw new NotFoundException("Cerere inexistentă.");
-    if (req.status !== "APPROVED") throw new BadRequestException("Doar cererile aprobate pot fi întrerupte.");
+    return this.prisma.$transaction(async (tx) => {
+      const req = await tx.leaveRequest.findUnique({ where: { id: requestId } });
+      if (!req) throw new NotFoundException("Cerere inexistentă.");
+      if (req.status !== "APPROVED") throw new BadRequestException("Doar cererile aprobate pot fi întrerupte.");
 
-    return this.prisma.leaveRequest.update({
-      where: { id: requestId },
-      data: {
-        status: "INTERRUPTED",
-        interruptedAt: new Date(),
-        interruptedById: interrupterId,
-        reason: reason ?? req.reason,
-      },
+      const interruptedAt = new Date();
+      const effectiveEnd = interruptedAt < req.endDate ? interruptedAt : req.endDate;
+
+      const effectiveDays = diffDays(req.startDate, effectiveEnd);
+      const refundDays = Math.max(0, req.daysCount - effectiveDays);
+
+      const updated = await tx.leaveRequest.update({
+        where: { id: requestId },
+        data: {
+          status: "INTERRUPTED",
+          interruptedAt,
+          interruptedById: interrupterId,
+          reason: reason ?? req.reason,
+        },
+      });
+
+      const year = req.startDate.getFullYear();
+      await this.leaveBalanceService.refundDaysTx(tx, {
+        userId: req.requesterId,
+        year,
+        type: req.type as LeaveType,
+        days: refundDays,
+      });
+
+      return { updated, effectiveDays, refundDays };
     });
   }
 
@@ -92,8 +146,8 @@ export class LeaveRequestsService {
     query: {
       status?: RequestStatus;
       type?: LeaveType;
-      from?: string; // YYYY-MM-DD
-      to?: string;   // YYYY-MM-DD
+      from?: string;
+      to?: string;
       requesterId?: string | number;
       page?: string | number;
       pageSize?: string | number;
@@ -112,7 +166,6 @@ export class LeaveRequestsService {
 
     const where: any = {};
 
-    // dacă nu are drepturi extinse, vede doar cererile lui
     if (!canSeeAll) {
       where.requesterId = user.sub;
     } else if (query.requesterId) {
