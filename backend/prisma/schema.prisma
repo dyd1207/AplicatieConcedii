@@ -76,12 +76,12 @@ model LeaveRequest {
   approvedById Int?
   approvedBy   User? @relation("ApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   interruptedAt   DateTime?
   interruptedById Int?
   interruptedBy   User?     @relation("InterruptedBy", fields: [interruptedById], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   @@index([requesterId])
   @@index([status])
