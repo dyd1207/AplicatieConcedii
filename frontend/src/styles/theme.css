@@ -1,0 +1,32 @@
+:root {
+  --app-primary: #0d6efd;   /* albastru */
+  --app-bg: #f4f8fb;        /* fundal foarte deschis */
+  --app-white: #ffffff;
+
+  --status-approved: #198754;  /* verde */
+  --status-pending: #fd7e14;   /* portocaliu */
+  --status-rejected: #dc3545;  /* rosu */
+}
+
+/* fundal general */
+body {
+  background: var(--app-bg);
+}
+
+/* helpers */
+.text-app-primary { color: var(--app-primary) !important; }
+.bg-app-primary { background: var(--app-primary) !important; }
+.bg-app-white { background: var(--app-white) !important; }
+
+/* status badges */
+.badge-approved { background: var(--status-approved) !important; }
+.badge-pending { background: var(--status-pending) !important; }
+.badge-rejected { background: var(--status-rejected) !important; }
+
+/* card look */
+.app-card {
+  background: var(--app-white);
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+  border: 1px solid rgba(13, 110, 253, 0.08);
+}
