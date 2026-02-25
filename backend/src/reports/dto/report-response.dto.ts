@@ -29,8 +29,34 @@ export type ReportRowDto = {
   effectiveDays: number;
 };
 
+//
+export type LeaveBalanceLineDto = {
+  annualDays: number;
+  carryoverDays: number;
+  usedDays: number;
+  remainingDays: number;
+};
+
+export type ReportBalanceUserDto = {
+  userId: number;
+  username: string | null;
+  fullName: string | null;
+
+  CO?: LeaveBalanceLineDto;
+  COR?: LeaveBalanceLineDto;
+};
+
+export type ReportBalancesTotalsDto = {
+  CO?: LeaveBalanceLineDto;
+  COR?: LeaveBalanceLineDto;
+};
+
 export type ReportResponseDto = {
   interval: { start: string; end: string };
   totals: ReportTotalsDto;
   rows: ReportRowDto[];
+
+  balancesYear: number;
+  balances: ReportBalanceUserDto[];
+  balancesTotals: ReportBalancesTotalsDto;
 };
