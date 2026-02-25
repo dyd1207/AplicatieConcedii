@@ -4,7 +4,7 @@ import type { ReportResponseDto } from "./dto/report-response.dto";
 
 @Injectable()
 export class ReportsExcelService {
-  async buildMonthlyReportWorkbook(report: ReportResponseDto, year: number, month: number) {
+  private buildReportWorkbook(report: ReportResponseDto, title: string) {
     const wb = new ExcelJS.Workbook();
     wb.creator = "Aplicatie Concedii";
     wb.created = new Date();
@@ -13,10 +13,10 @@ export class ReportsExcelService {
     const summary = wb.addWorksheet("Summary");
     summary.columns = [
       { header: "Metric", key: "metric", width: 35 },
-      { header: "Value", key: "value", width: 25 },
+      { header: "Value", key: "value", width: 35 },
     ];
 
-    summary.addRow({ metric: "Raport", value: `Monthly ${year}-${String(month).padStart(2, "0")}` });
+    summary.addRow({ metric: "Raport", value: title });
     summary.addRow({ metric: "Interval start", value: report.interval.start });
     summary.addRow({ metric: "Interval end", value: report.interval.end });
     summary.addRow({ metric: "Total cereri", value: report.totals.totalRequests });
@@ -25,16 +25,18 @@ export class ReportsExcelService {
     summary.addRow({ metric: "Cereri întrerupte", value: report.totals.interruptedCount });
 
     summary.addRow({ metric: "", value: "" });
-    summary.addRow({ metric: "Distribuție status", value: "" });
+
+    const statusHeaderRow = summary.addRow({ metric: "Distribuție status", value: "" });
     Object.entries(report.totals.byStatus).forEach(([k, v]) => summary.addRow({ metric: k, value: v }));
 
     summary.addRow({ metric: "", value: "" });
-    summary.addRow({ metric: "Distribuție tip", value: "" });
+
+    const typeHeaderRow = summary.addRow({ metric: "Distribuție tip", value: "" });
     Object.entries(report.totals.byType).forEach(([k, v]) => summary.addRow({ metric: k, value: v }));
 
     summary.getRow(1).font = { bold: true };
-    summary.getRow(9).font = { bold: true };
-    summary.getRow(12).font = { bold: true };
+    statusHeaderRow.font = { bold: true };
+    typeHeaderRow.font = { bold: true };
 
     // 2) Sheet: Requests (detaliat)
     const reqSheet = wb.addWorksheet("Requests");
@@ -109,7 +111,7 @@ export class ReportsExcelService {
 
     // totaluri sold pe ultimul rând
     balSheet.addRow({});
-    balSheet.addRow({
+    const totalsRow = balSheet.addRow({
       userId: 0,
       username: "TOTAL",
       fullName: "",
@@ -124,8 +126,24 @@ export class ReportsExcelService {
     });
 
     balSheet.getRow(1).font = { bold: true };
+    totalsRow.font = { bold: true };
     balSheet.views = [{ state: "frozen", ySplit: 1 }];
 
     return wb;
+  }
+
+  async buildMonthlyReportWorkbook(report: ReportResponseDto, year: number, month: number) {
+    const title = `Monthly ${year}-${String(month).padStart(2, "0")}`;
+    return this.buildReportWorkbook(report, title);
+  }
+
+  async buildYearlyReportWorkbook(report: ReportResponseDto, year: number) {
+    const title = `Yearly ${year}`;
+    return this.buildReportWorkbook(report, title);
+  }
+
+  async buildWeeklyReportWorkbook(report: ReportResponseDto, weekStartIso?: string) {
+    const title = `Weekly ${weekStartIso ?? "current_week"}`;
+    return this.buildReportWorkbook(report, title);
   }
 }

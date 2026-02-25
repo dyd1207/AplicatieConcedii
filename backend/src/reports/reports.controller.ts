@@ -62,4 +62,41 @@ export class ReportsController {
     await wb.xlsx.write(res);
     res.end();
   }
+  @Get("weekly/excel")
+  @Roles("ANGAJAT", "SECRETARIAT", "SEF_STRUCTURA", "DIRECTOR_ADJUNCT", "DIRECTOR", "ADMINISTRATOR")
+  async weeklyExcel(@Query() query: WeeklyReportQueryDto, @Req() req: Request, @Res() res: Response) {
+    const user = req.user as any;
+    const report = await this.reportsService.weekly({ weekStart: query.weekStart, user });
+
+    const weekStart = query.weekStart ?? "current_week";
+    const wb = await this.reportsExcelService.buildReportWorkbook({
+      report,
+      title: `Weekly ${weekStart}`,
+      filenameBase: `report_weekly_${weekStart}`,
+    });
+
+    const filename = `report_weekly_${weekStart}.xlsx`;
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    await wb.xlsx.write(res);
+    res.end();
+  }
+  @Get("yearly/excel")
+  @Roles("ANGAJAT", "SECRETARIAT", "SEF_STRUCTURA", "DIRECTOR_ADJUNCT", "DIRECTOR", "ADMINISTRATOR")
+  async yearlyExcel(@Query() query: YearlyReportQueryDto, @Req() req: Request, @Res() res: Response) {
+    const user = req.user as any;
+    const report = await this.reportsService.yearly({ year: query.year, user });
+
+    const wb = await this.reportsExcelService.buildReportWorkbook({
+      report,
+      title: `Yearly ${query.year}`,
+      filenameBase: `report_yearly_${query.year}`,
+    });
+
+    const filename = `report_yearly_${query.year}.xlsx`;
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    await wb.xlsx.write(res);
+    res.end();
+  }
 }
