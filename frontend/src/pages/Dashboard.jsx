@@ -1,8 +1,8 @@
+import PageContainer from "../components/layout/PageContainer";
+
 export default function Dashboard() {
   return (
-    <div className="container py-4">
-      <h2 className="text-app-primary mb-3">Dashboard</h2>
-
+    <PageContainer title="Dashboard">
       <div className="row g-3">
         <div className="col-md-4">
           <div className="app-card p-3">
@@ -34,6 +34,6 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }
