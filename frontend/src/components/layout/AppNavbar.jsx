@@ -6,7 +6,6 @@ export default function AppNavbar() {
   const navigate = useNavigate();
 
   const roles = user?.roles || [];
-
   const canSee = (role) => roles.includes(role);
 
   const handleLogout = () => {
@@ -15,8 +14,9 @@ export default function AppNavbar() {
   };
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark bg-app-primary">
-      <div className="container">
+    <nav className="navbar navbar-expand-lg navbar-dark bg-app-primary w-100 sticky-top">
+      {/* container-fluid = navbar full width; inner container pentru aliniere frumoasă */}
+      <div className="container-fluid px-3">
         <Link className="navbar-brand fw-semibold" to="/dashboard">
           Concedii
         </Link>

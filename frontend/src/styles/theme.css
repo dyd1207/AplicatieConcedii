@@ -8,10 +8,26 @@
   --status-rejected: #dc3545;  /* rosu */
 }
 
-/* fundal general */
+/* RESET GLOBAL – foarte important */
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* eliminăm stilurile default Vite */
+#root {
+  width: 100%;
+}
+
+/* body fără flex centering */
 body {
   background: var(--app-bg);
+  overflow-x: hidden; /* previne spațiu alb lateral */
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
+
 
 /* helpers */
 .text-app-primary { color: var(--app-primary) !important; }

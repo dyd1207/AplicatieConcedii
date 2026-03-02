@@ -5,7 +5,9 @@ export default function AppLayout() {
   return (
     <>
       <AppNavbar />
-      <Outlet />
+      <main className="app-content">
+        <Outlet />
+      </main>
     </>
   );
 }
