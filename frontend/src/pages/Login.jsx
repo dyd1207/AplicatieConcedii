@@ -1,32 +1,55 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { loginRequest } from "../api/auth.api";
 
 export default function Login() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    // TEMP: login local ca să testăm rutele.
-    // Când legăm backend-ul, înlocuim cu request axios către /auth/login.
     if (!identifier || !password) {
       setError("Completează email/username și parola.");
       return;
     }
 
-    login({
-      token: "dev-token",
-      user: { fullName: "User Demo", roles: ["USER"] },
-    });
+    try {
+      setLoading(true);
 
-    navigate("/dashboard");
+      const data = await loginRequest(identifier, password);
+
+      // Acceptăm 2 formate comune:
+      const token = data.accessToken || data.token;
+      const user = data.user || data;
+
+      if (!token) {
+        setError("Login eșuat: lipsă token în răspunsul backend.");
+        return;
+      }
+      if (!user) {
+        setError("Login eșuat: lipsă user în răspunsul backend.");
+        return;
+      }
+
+      login({ token, user });
+      navigate("/dashboard");
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        "Autentificare eșuată. Verifică datele sau conexiunea la server.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -46,6 +69,7 @@ export default function Login() {
               onChange={(e) => setIdentifier(e.target.value)}
               placeholder="ex: danut.tenchiu"
               autoFocus
+              disabled={loading}
             />
           </div>
 
@@ -57,11 +81,12 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
+              disabled={loading}
             />
           </div>
 
-          <button className="btn btn-primary w-100" type="submit">
-            Login
+          <button className="btn btn-primary w-100" type="submit" disabled={loading}>
+            {loading ? "Se autentifică..." : "Login"}
           </button>
         </form>
       </div>
