@@ -46,3 +46,22 @@ body {
   box-shadow: 0 6px 20px rgba(0,0,0,0.08);
   border: 1px solid rgba(13, 110, 253, 0.08);
 }
+
+.app-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 2000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 16px;
+}
+
+.app-modal-dialog {
+  width: 100%;
+  max-width: 900px;
+  z-index: 2001;
+}

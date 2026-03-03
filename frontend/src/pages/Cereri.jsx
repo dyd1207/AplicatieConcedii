@@ -1,55 +1,77 @@
 import { useEffect, useMemo, useState } from "react";
 import PageContainer from "../components/layout/PageContainer";
 import StatusBadge from "../components/ui/StatusBadge";
-import { getLeaveRequests } from "../api/leaveRequests.api";
+import { getLeaveRequests, createLeaveRequest } from "../api/leaveRequests.api";
 import { formatDateRO, formatLeaveType } from "../utils/formatters";
+import Modal from "../components/ui/Modal";
+import LeaveRequestForm from "../components/leaveRequests/LeaveRequestForm";
 
 export default function Cereri() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // filtre (simple, fără să depindem de backend)
+  // filtre
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("ALL");
   const [type, setType] = useState("ALL");
 
+  // stare cerere noua
+  const [openNew, setOpenNew] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const loadRequests = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const data = await getLeaveRequests();
+      const list = Array.isArray(data) ? data : data?.items || [];
+      setItems(list);
+    } catch (e) {
+      const msg =
+        e?.response?.data?.message ||
+        e?.response?.data?.error ||
+        "Nu s-au putut încărca cererile.";
+      setError(typeof msg === "string" ? msg : JSON.stringify(msg));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     let alive = true;
 
-    async function load() {
-      try {
-        setLoading(true);
-        setError("");
+    (async () => {
+      if (!alive) return;
+      await loadRequests();
+    })();
 
-        // Dacă backend-ul suportă parametri, îi poți trimite aici.
-        // Momentan cerem tot și filtrăm client-side (safe).
-        const data = await getLeaveRequests();
-
-        // Acceptăm 2 forme comune:
-        // - array direct
-        // - { items: [...] }
-        const list = Array.isArray(data) ? data : data?.items || [];
-
-        if (!alive) return;
-        setItems(list);
-      } catch (e) {
-        if (!alive) return;
-        const msg =
-          e?.response?.data?.message ||
-          e?.response?.data?.error ||
-          "Nu s-au putut încărca cererile.";
-        setError(typeof msg === "string" ? msg : JSON.stringify(msg));
-      } finally {
-        if (alive) setLoading(false);
-      }
-    }
-
-    load();
     return () => {
       alive = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleCreate = async (payload) => {
+    try {
+      setSaving(true);
+      setError("");
+
+      await createLeaveRequest(payload);
+
+      setOpenNew(false);
+      await loadRequests();
+    } catch (e) {
+      const msg =
+        e?.response?.data?.message ||
+        e?.response?.data?.error ||
+        "Nu s-a putut crea cererea.";
+      setError(typeof msg === "string" ? msg : JSON.stringify(msg));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     const text = q.trim().toLowerCase();
@@ -104,13 +126,14 @@ export default function Cereri() {
           </div>
 
           <div className="col-md-2 d-grid">
-            <button className="btn btn-primary" disabled>
+            <button className="btn btn-primary" onClick={() => setOpenNew(true)} disabled={saving}>
               Cerere nouă
             </button>
           </div>
         </div>
+
         <small className="text-muted d-block mt-2">
-          * „Cerere nouă” o implementăm în pasul următor (CardBox).
+          Creează o cerere nouă (status inițial: <b>DRAFT</b>), apoi o vei putea trimite spre aprobare.
         </small>
       </div>
 
@@ -170,6 +193,19 @@ export default function Cereri() {
           </>
         )}
       </div>
+
+      <Modal
+        title="Cerere nouă"
+        open={openNew}
+        onClose={() => !saving && setOpenNew(false)}
+        footer={
+          <button className="btn btn-outline-secondary" onClick={() => setOpenNew(false)} disabled={saving}>
+            Închide
+          </button>
+        }
+      >
+        <LeaveRequestForm onSubmit={handleCreate} loading={saving} />
+      </Modal>
     </PageContainer>
   );
 }
