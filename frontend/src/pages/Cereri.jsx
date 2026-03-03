@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import PageContainer from "../components/layout/PageContainer";
 import StatusBadge from "../components/ui/StatusBadge";
-import { getLeaveRequests, createLeaveRequest } from "../api/leaveRequests.api";
+import { getLeaveRequests, createLeaveRequest, submitLeaveRequest } from "../api/leaveRequests.api";
 import { formatDateRO, formatLeaveType } from "../utils/formatters";
 import Modal from "../components/ui/Modal";
 import LeaveRequestForm from "../components/leaveRequests/LeaveRequestForm";
@@ -16,9 +16,12 @@ export default function Cereri() {
   const [status, setStatus] = useState("ALL");
   const [type, setType] = useState("ALL");
 
-  // stare cerere noua
+  // cerere nouă
   const [openNew, setOpenNew] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // submit
+  const [submittingId, setSubmittingId] = useState(null);
 
   const loadRequests = async () => {
     try {
@@ -59,8 +62,8 @@ export default function Cereri() {
       setError("");
 
       await createLeaveRequest(payload);
-
       setOpenNew(false);
+
       await loadRequests();
     } catch (e) {
       const msg =
@@ -70,6 +73,24 @@ export default function Cereri() {
       setError(typeof msg === "string" ? msg : JSON.stringify(msg));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSubmit = async (id) => {
+    try {
+      setSubmittingId(id);
+      setError("");
+
+      await submitLeaveRequest(id);
+      await loadRequests();
+    } catch (e) {
+      const msg =
+        e?.response?.data?.message ||
+        e?.response?.data?.error ||
+        "Nu s-a putut trimite cererea.";
+      setError(typeof msg === "string" ? msg : JSON.stringify(msg));
+    } finally {
+      setSubmittingId(null);
     }
   };
 
@@ -154,6 +175,7 @@ export default function Cereri() {
               <table className="table table-hover align-middle mb-0">
                 <thead>
                   <tr>
+                    <th style={{ width: 160 }}>Acțiuni</th>
                     <th style={{ width: 90 }}>ID</th>
                     <th style={{ width: 90 }}>Tip</th>
                     <th style={{ width: 140 }}>Start</th>
@@ -163,16 +185,31 @@ export default function Cereri() {
                     <th>Motiv</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {filtered.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="text-muted py-4 text-center">
+                      <td colSpan={8} className="text-muted py-4 text-center">
                         Nu există cereri pentru filtrele selectate.
                       </td>
                     </tr>
                   ) : (
                     filtered.map((x) => (
                       <tr key={x.id}>
+                        <td>
+                          {x.status === "DRAFT" ? (
+                            <button
+                              className="btn btn-warning btn-sm"
+                              onClick={() => handleSubmit(x.id)}
+                              disabled={submittingId === x.id}
+                            >
+                              {submittingId === x.id ? "Se trimite..." : "Trimite"}
+                            </button>
+                          ) : (
+                            <span className="text-muted">—</span>
+                          )}
+                        </td>
+
                         <td>#{x.id}</td>
                         <td>{formatLeaveType(x.type)}</td>
                         <td>{formatDateRO(x.startDate)}</td>
