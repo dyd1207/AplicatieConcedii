@@ -6,7 +6,38 @@ export default function AppNavbar() {
   const navigate = useNavigate();
 
   const roles = user?.roles || [];
-  const canSee = (role) => roles.includes(role);
+
+  const has = (role) => roles.includes(role);
+  const hasAny = (...wanted) => wanted.some((r) => roles.includes(r));
+
+  // Roluri (acceptăm și variantele “vechi” ca să nu te încurce)
+  const isAdmin = hasAny("ADMINISTRATOR", "ADMIN");
+  const isSecretariat = has("SECRETARIAT");
+
+  const isSef = hasAny("SEF_STRUCTURA", "SEF");
+  const isPontator = has("PONTATOR");
+  const isDirectorAdj = has("DIRECTOR_ADJUNCT");
+  const isDirector = hasAny("DIRECTOR", "DIRECTOR_GENERAL"); // dacă nu ai DIRECTOR_GENERAL, rămâne doar DIRECTOR
+
+  /**
+   * Cerințe vizibilitate:
+   * - Secretariat: acces la /secretariat
+   * - Administrator: full acces (avizare, aprobare, secretariat, admin)
+   * - Sefii + director adjunct + directorii + pontatorii: acces la secretariat, avizare, aprobare
+   * - Director adjunct + director: full acces mai puțin administrare (deci au tot, fără /admin)
+   */
+
+  // Avizare: șefi + director adjunct + directori + pontatori + admin
+  const canSeeAvizare = isAdmin || isSef || isDirectorAdj || isDirector || isPontator;
+
+  // Aprobare: șefi + director adjunct + directori + pontatori + admin
+  const canSeeAprobare = isAdmin || isSef || isDirectorAdj || isDirector || isPontator;
+
+  // Secretariat: secretariat + șefi + director adjunct + directori + pontatori + admin
+  const canSeeSecretariat = isSecretariat || isAdmin || isSef || isDirectorAdj || isDirector || isPontator;
+
+  // Administrare: doar admin
+  const canSeeAdmin = isAdmin;
 
   const handleLogout = () => {
     logout();
@@ -15,7 +46,6 @@ export default function AppNavbar() {
 
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-app-primary w-100 sticky-top">
-      {/* container-fluid = navbar full width; inner container pentru aliniere frumoasă */}
       <div className="container-fluid px-3">
         <Link className="navbar-brand fw-semibold" to="/dashboard">
           Concedii
@@ -47,7 +77,7 @@ export default function AppNavbar() {
               </NavLink>
             </li>
 
-            {(canSee("SEF") || canSee("PONTATOR")) && (
+            {canSeeAvizare && (
               <li className="nav-item">
                 <NavLink className="nav-link" to="/avizare">
                   Avizare
@@ -55,7 +85,7 @@ export default function AppNavbar() {
               </li>
             )}
 
-            {(canSee("DIRECTOR") || canSee("DIRECTOR_GENERAL")) && (
+            {canSeeAprobare && (
               <li className="nav-item">
                 <NavLink className="nav-link" to="/aprobare">
                   Aprobare
@@ -63,7 +93,7 @@ export default function AppNavbar() {
               </li>
             )}
 
-            {canSee("SECRETARIAT") && (
+            {canSeeSecretariat && (
               <li className="nav-item">
                 <NavLink className="nav-link" to="/secretariat">
                   Secretariat
@@ -71,7 +101,8 @@ export default function AppNavbar() {
               </li>
             )}
 
-            {canSee("PONTATOR") && (
+            {/* Pontator page (dacă există ca pagină separată) */}
+            {isPontator && (
               <li className="nav-item">
                 <NavLink className="nav-link" to="/pontator">
                   Pontator
@@ -79,7 +110,7 @@ export default function AppNavbar() {
               </li>
             )}
 
-            {canSee("ADMIN") && (
+            {canSeeAdmin && (
               <li className="nav-item">
                 <NavLink className="nav-link" to="/admin">
                   Administrare
@@ -95,9 +126,7 @@ export default function AppNavbar() {
           </ul>
 
           <div className="d-flex align-items-center gap-2">
-            <span className="text-white-50 small d-none d-lg-inline">
-              {user?.fullName || "—"}
-            </span>
+            <span className="text-white-50 small d-none d-lg-inline">{user?.fullName || "—"}</span>
             <button className="btn btn-outline-light btn-sm" onClick={handleLogout}>
               Logout
             </button>

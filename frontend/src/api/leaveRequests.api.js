@@ -16,3 +16,13 @@ export async function submitLeaveRequest(id) {
   const res = await api.post(`/leave-requests/${id}/submit`);
   return res.data;
 }
+
+export async function approveLeaveRequest(id) {
+  const res = await api.post(`/leave-requests/${id}/approve`);
+  return res.data;
+}
+
+export async function rejectLeaveRequest(id, reason) {
+  const res = await api.post(`/leave-requests/${id}/reject`, { reason });
+  return res.data;
+}
