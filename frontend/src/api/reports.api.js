@@ -1,18 +1,44 @@
 import api from "./axios";
 
-/**
- * Download raport Excel.
- * Exemplu rute (alege una existentă în backend):
- * - GET /reports/weekly?from=YYYY-MM-DD&to=YYYY-MM-DD
- * - GET /reports/monthly?year=2026&month=3
- * - GET /reports/yearly?year=2026
- *
- * Important: responseType blob ca să descarci fișier.
- */
-export async function downloadReportExcel(path, params = {}) {
-  const res = await api.get(path, {
-    params,
+// JSON reports
+export async function getWeeklyReport(weekStart) {
+  const res = await api.get("/reports/weekly", { params: { weekStart } });
+  return res.data;
+}
+
+export async function getMonthlyReport(year, month) {
+  const res = await api.get("/reports/monthly", {
+    params: { year: Number(year), month: Number(month) },
+  });
+  return res.data;
+}
+
+export async function getYearlyReport(year) {
+  const res = await api.get("/reports/yearly", { params: { year: Number(year) } });
+  return res.data;
+}
+
+// Excel reports
+export async function downloadWeeklyExcel(weekStart) {
+  const res = await api.get("/reports/weekly/excel", {
+    params: { weekStart },
     responseType: "blob",
   });
-  return res.data; // Blob
+  return res.data;
+}
+
+export async function downloadMonthlyExcel(year, month) {
+  const res = await api.get("/reports/monthly/excel", {
+    params: { year: Number(year), month: Number(month) },
+    responseType: "blob",
+  });
+  return res.data;
+}
+
+export async function downloadYearlyExcel(year) {
+  const res = await api.get("/reports/yearly/excel", {
+    params: { year: Number(year) },
+    responseType: "blob",
+  });
+  return res.data;
 }
