@@ -6,6 +6,7 @@ import { AuthModule } from "./auth/auth.module";
 import { LeaveRequestsModule } from "./leave-requests/leave-requests.module";
 import { ReportsModule } from "./reports/reports.module";
 import { LeaveBalanceModule } from "./leave-balance/leave-balance.module";
+import { UsersModule } from "./users/users.module"; 
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { LeaveBalanceModule } from "./leave-balance/leave-balance.module";
     LeaveRequestsModule,
     ReportsModule,
     LeaveBalanceModule,
+    UsersModule,
   ],
   controllers: [AppController],
 })
