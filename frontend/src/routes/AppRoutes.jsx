@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+
 import Login from "../pages/Login";
 import Dashboard from "../pages/Dashboard";
 import Cereri from "../pages/Cereri";
@@ -10,13 +11,13 @@ import Admin from "../pages/Admin";
 import Rapoarte from "../pages/Rapoarte";
 
 import ProtectedRoute from "./ProtectedRoute";
+import RoleProtectedRoute from "./RoleProtectedRoute";
 import AppLayout from "../components/layout/AppLayout";
 
 export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
-
       <Route path="/login" element={<Login />} />
 
       <Route
@@ -28,12 +29,86 @@ export default function AppRoutes() {
       >
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/cereri" element={<Cereri />} />
-        <Route path="/avizare" element={<Avizare />} />
-        <Route path="/aprobare" element={<Aprobare />} />
-        <Route path="/secretariat" element={<Secretariat />} />
-        <Route path="/pontator" element={<Pontator />} />
-        <Route path="/admin" element={<Admin />} />
         <Route path="/rapoarte" element={<Rapoarte />} />
+
+        <Route
+          path="/avizare"
+          element={
+            <RoleProtectedRoute
+              allowedRoles={[
+                "SEF_STRUCTURA",
+                "SEF",
+                "PONTATOR",
+                "DIRECTOR_ADJUNCT",
+                "DIRECTOR",
+                "DIRECTOR_GENERAL",
+                "ADMINISTRATOR",
+                "ADMIN",
+              ]}
+            >
+              <Avizare />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/aprobare"
+          element={
+            <RoleProtectedRoute
+              allowedRoles={[
+                "SEF_STRUCTURA",
+                "SEF",
+                "PONTATOR",
+                "DIRECTOR_ADJUNCT",
+                "DIRECTOR",
+                "DIRECTOR_GENERAL",
+                "ADMINISTRATOR",
+                "ADMIN",
+              ]}
+            >
+              <Aprobare />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/secretariat"
+          element={
+            <RoleProtectedRoute
+              allowedRoles={[
+                "SECRETARIAT",
+                "SEF_STRUCTURA",
+                "SEF",
+                "PONTATOR",
+                "DIRECTOR_ADJUNCT",
+                "DIRECTOR",
+                "DIRECTOR_GENERAL",
+                "ADMINISTRATOR",
+                "ADMIN",
+              ]}
+            >
+              <Secretariat />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/pontator"
+          element={
+            <RoleProtectedRoute allowedRoles={["PONTATOR", "ADMINISTRATOR", "ADMIN"]}>
+              <Pontator />
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin"
+          element={
+            <RoleProtectedRoute allowedRoles={["ADMINISTRATOR", "ADMIN"]}>
+              <Admin />
+            </RoleProtectedRoute>
+          }
+        />
       </Route>
 
       <Route path="*" element={<Navigate to="/login" replace />} />
