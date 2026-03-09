@@ -20,7 +20,7 @@ export default function RoleProtectedRoute({ children, allowedRoles = [] }) {
   const hasAccess = allowedRoles.some((role) => roles.includes(role));
 
   if (!hasAccess) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/403" replace />;
   }
 
   return children;

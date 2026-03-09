@@ -9,7 +9,7 @@ import Secretariat from "../pages/Secretariat";
 import Pontator from "../pages/Pontator";
 import Admin from "../pages/Admin";
 import Rapoarte from "../pages/Rapoarte";
-
+import Forbidden from "../pages/Forbidden";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleProtectedRoute from "./RoleProtectedRoute";
 import AppLayout from "../components/layout/AppLayout";
@@ -30,6 +30,7 @@ export default function AppRoutes() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/cereri" element={<Cereri />} />
         <Route path="/rapoarte" element={<Rapoarte />} />
+        <Route path="/403" element={<Forbidden />} />
 
         <Route
           path="/avizare"
