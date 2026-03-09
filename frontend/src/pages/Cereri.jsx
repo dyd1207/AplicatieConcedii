@@ -11,17 +11,15 @@ export default function Cereri() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // filtre
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("ALL");
   const [type, setType] = useState("ALL");
 
-  // cerere nouă
   const [openNew, setOpenNew] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // submit
   const [submittingId, setSubmittingId] = useState(null);
+  const [confirmSubmitId, setConfirmSubmitId] = useState(null);
 
   const loadRequests = async () => {
     try {
@@ -53,7 +51,6 @@ export default function Cereri() {
     return () => {
       alive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCreate = async (payload) => {
@@ -200,7 +197,7 @@ export default function Cereri() {
                           {x.status === "DRAFT" ? (
                             <button
                               className="btn btn-warning btn-sm"
-                              onClick={() => handleSubmit(x.id)}
+                              onClick={() => setConfirmSubmitId(x.id)}
                               disabled={submittingId === x.id}
                             >
                               {submittingId === x.id ? "Se trimite..." : "Trimite"}
@@ -242,6 +239,36 @@ export default function Cereri() {
         }
       >
         <LeaveRequestForm onSubmit={handleCreate} loading={saving} />
+      </Modal>
+
+      <Modal
+        title="Trimite cererea"
+        open={confirmSubmitId !== null}
+        onClose={() => !submittingId && setConfirmSubmitId(null)}
+        footer={
+          <>
+            <button
+              className="btn btn-outline-secondary"
+              onClick={() => setConfirmSubmitId(null)}
+              disabled={!!submittingId}
+            >
+              Anulează
+            </button>
+            <button
+              className="btn btn-warning"
+              onClick={async () => {
+                const id = confirmSubmitId;
+                setConfirmSubmitId(null);
+                await handleSubmit(id);
+              }}
+              disabled={!!submittingId}
+            >
+              Confirmă
+            </button>
+          </>
+        }
+      >
+        <p className="mb-0">Sigur vrei să trimiți această cerere spre aprobare?</p>
       </Modal>
     </PageContainer>
   );

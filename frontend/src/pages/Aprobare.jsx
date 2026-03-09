@@ -13,7 +13,8 @@ export default function Aprobare() {
   const [q, setQ] = useState("");
   const [actingId, setActingId] = useState(null);
 
-  // reject modal
+  const [confirmApproveId, setConfirmApproveId] = useState(null);
+
   const [openReject, setOpenReject] = useState(false);
   const [rejectId, setRejectId] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -39,14 +40,13 @@ export default function Aprobare() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filtered = useMemo(() => {
     const text = q.trim().toLowerCase();
 
     return items
-      .filter((x) => x?.status === "SUBMITTED") // ✅ Aprobare = SUBMITTED
+      .filter((x) => x?.status === "SUBMITTED")
       .filter((x) => {
         if (!text) return true;
         return (
@@ -63,7 +63,6 @@ export default function Aprobare() {
       await approveLeaveRequest(id);
       await load();
     } catch (e) {
-      // aici e posibil să primești 403 dacă CanApproveGuard nu permite
       const msg =
         e?.response?.data?.message ||
         e?.response?.data?.error ||
@@ -116,8 +115,8 @@ export default function Aprobare() {
 
           <div className="col-md-6">
             <small className="text-muted d-block">
-              În această pagină apar doar cererile cu status <b>SUBMITTED</b>. Dreptul de aprobare este validat de backend
-              (CanApproveGuard).
+              În această pagină apar doar cererile cu status <b>SUBMITTED</b>. Dreptul de aprobare este validat de
+              backend (CanApproveGuard).
             </small>
           </div>
         </div>
@@ -164,7 +163,7 @@ export default function Aprobare() {
                         <td className="d-flex gap-2">
                           <button
                             className="btn btn-success btn-sm"
-                            onClick={() => handleApprove(x.id)}
+                            onClick={() => setConfirmApproveId(x.id)}
                             disabled={actingId === x.id}
                           >
                             {actingId === x.id ? "..." : "Aprobă"}
@@ -199,6 +198,36 @@ export default function Aprobare() {
           </>
         )}
       </div>
+
+      <Modal
+        title="Confirmare aprobare"
+        open={confirmApproveId !== null}
+        onClose={() => !actingId && setConfirmApproveId(null)}
+        footer={
+          <>
+            <button
+              className="btn btn-outline-secondary"
+              onClick={() => setConfirmApproveId(null)}
+              disabled={!!actingId}
+            >
+              Anulează
+            </button>
+            <button
+              className="btn btn-success"
+              onClick={async () => {
+                const id = confirmApproveId;
+                setConfirmApproveId(null);
+                await handleApprove(id);
+              }}
+              disabled={!!actingId}
+            >
+              Confirmă
+            </button>
+          </>
+        }
+      >
+        <p className="mb-0">Sigur vrei să aprobi această cerere?</p>
+      </Modal>
 
       <Modal
         title="Respinge cererea"

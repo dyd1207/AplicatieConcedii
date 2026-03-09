@@ -13,7 +13,8 @@ export default function Avizare() {
   const [q, setQ] = useState("");
   const [actingId, setActingId] = useState(null);
 
-  // reject modal
+  const [confirmApproveId, setConfirmApproveId] = useState(null);
+
   const [openReject, setOpenReject] = useState(false);
   const [rejectId, setRejectId] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -39,14 +40,13 @@ export default function Avizare() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filtered = useMemo(() => {
     const text = q.trim().toLowerCase();
 
     return items
-      .filter((x) => x?.status === "SUBMITTED") // ✅ Avizare = doar SUBMITTED
+      .filter((x) => x?.status === "SUBMITTED")
       .filter((x) => {
         if (!text) return true;
         return (
@@ -164,7 +164,7 @@ export default function Avizare() {
                         <td className="d-flex gap-2">
                           <button
                             className="btn btn-success btn-sm"
-                            onClick={() => handleApprove(x.id)}
+                            onClick={() => setConfirmApproveId(x.id)}
                             disabled={actingId === x.id}
                           >
                             {actingId === x.id ? "..." : "Avizează"}
@@ -199,6 +199,36 @@ export default function Avizare() {
           </>
         )}
       </div>
+
+      <Modal
+        title="Confirmare avizare"
+        open={confirmApproveId !== null}
+        onClose={() => !actingId && setConfirmApproveId(null)}
+        footer={
+          <>
+            <button
+              className="btn btn-outline-secondary"
+              onClick={() => setConfirmApproveId(null)}
+              disabled={!!actingId}
+            >
+              Anulează
+            </button>
+            <button
+              className="btn btn-success"
+              onClick={async () => {
+                const id = confirmApproveId;
+                setConfirmApproveId(null);
+                await handleApprove(id);
+              }}
+              disabled={!!actingId}
+            >
+              Confirmă
+            </button>
+          </>
+        }
+      >
+        <p className="mb-0">Sigur vrei să avizezi această cerere?</p>
+      </Modal>
 
       <Modal
         title="Respinge cererea"
