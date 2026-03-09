@@ -10,6 +10,7 @@ import Pontator from "../pages/Pontator";
 import Admin from "../pages/Admin";
 import Rapoarte from "../pages/Rapoarte";
 import Forbidden from "../pages/Forbidden";
+
 import ProtectedRoute from "./ProtectedRoute";
 import RoleProtectedRoute from "./RoleProtectedRoute";
 import AppLayout from "../components/layout/AppLayout";
@@ -17,9 +18,14 @@ import AppLayout from "../components/layout/AppLayout";
 export default function AppRoutes() {
   return (
     <Routes>
+
+      {/* Redirect root */}
       <Route path="/" element={<Navigate to="/login" replace />} />
+
+      {/* Login */}
       <Route path="/login" element={<Login />} />
 
+      {/* Protected layout */}
       <Route
         element={
           <ProtectedRoute>
@@ -27,24 +33,22 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       >
+
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/cereri" element={<Cereri />} />
         <Route path="/rapoarte" element={<Rapoarte />} />
         <Route path="/403" element={<Forbidden />} />
 
+        {/* AVIZARE */}
         <Route
           path="/avizare"
           element={
             <RoleProtectedRoute
               allowedRoles={[
                 "SEF_STRUCTURA",
-                "SEF",
-                "PONTATOR",
                 "DIRECTOR_ADJUNCT",
-                "DIRECTOR",
-                "DIRECTOR_GENERAL",
+                "PONTATOR",
                 "ADMINISTRATOR",
-                "ADMIN",
               ]}
             >
               <Avizare />
@@ -52,19 +56,15 @@ export default function AppRoutes() {
           }
         />
 
+        {/* APROBARE */}
         <Route
           path="/aprobare"
           element={
             <RoleProtectedRoute
               allowedRoles={[
-                "SEF_STRUCTURA",
-                "SEF",
-                "PONTATOR",
-                "DIRECTOR_ADJUNCT",
                 "DIRECTOR",
-                "DIRECTOR_GENERAL",
+                "DIRECTOR_ADJUNCT",
                 "ADMINISTRATOR",
-                "ADMIN",
               ]}
             >
               <Aprobare />
@@ -72,6 +72,7 @@ export default function AppRoutes() {
           }
         />
 
+        {/* SECRETARIAT */}
         <Route
           path="/secretariat"
           element={
@@ -79,13 +80,10 @@ export default function AppRoutes() {
               allowedRoles={[
                 "SECRETARIAT",
                 "SEF_STRUCTURA",
-                "SEF",
-                "PONTATOR",
                 "DIRECTOR_ADJUNCT",
                 "DIRECTOR",
-                "DIRECTOR_GENERAL",
+                "PONTATOR",
                 "ADMINISTRATOR",
-                "ADMIN",
               ]}
             >
               <Secretariat />
@@ -93,26 +91,40 @@ export default function AppRoutes() {
           }
         />
 
+        {/* PONTATOR */}
         <Route
           path="/pontator"
           element={
-            <RoleProtectedRoute allowedRoles={["PONTATOR", "ADMINISTRATOR", "ADMIN"]}>
+            <RoleProtectedRoute
+              allowedRoles={[
+                "PONTATOR",
+                "ADMINISTRATOR",
+              ]}
+            >
               <Pontator />
             </RoleProtectedRoute>
           }
         />
 
+        {/* ADMIN */}
         <Route
           path="/admin"
           element={
-            <RoleProtectedRoute allowedRoles={["ADMINISTRATOR", "ADMIN"]}>
+            <RoleProtectedRoute
+              allowedRoles={[
+                "ADMINISTRATOR",
+              ]}
+            >
               <Admin />
             </RoleProtectedRoute>
           }
         />
+
       </Route>
 
+      {/* fallback */}
       <Route path="*" element={<Navigate to="/login" replace />} />
+
     </Routes>
   );
 }
