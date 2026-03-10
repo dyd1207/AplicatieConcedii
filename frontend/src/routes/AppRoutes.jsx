@@ -10,6 +10,7 @@ import Pontator from "../pages/Pontator";
 import Admin from "../pages/Admin";
 import Rapoarte from "../pages/Rapoarte";
 import Forbidden from "../pages/Forbidden";
+import NotFound from "../pages/NotFound";
 
 import ProtectedRoute from "./ProtectedRoute";
 import RoleProtectedRoute from "./RoleProtectedRoute";
@@ -123,7 +124,7 @@ export default function AppRoutes() {
       </Route>
 
       {/* fallback */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<NotFound />} />
 
     </Routes>
   );
