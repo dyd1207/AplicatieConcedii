@@ -2,6 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import PageContainer from "../components/layout/PageContainer";
 import { getLeaveRequests } from "../api/leaveRequests.api";
 import { getMyLeaveBalance } from "../api/leaveBalance.api";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
 
 function pickEntitlement(balance, type) {
   // Acceptăm mai multe forme posibile:
@@ -44,8 +53,10 @@ export default function Dashboard() {
       try {
         setLoadingReq(true);
         setErrorReq("");
+
         const data = await getLeaveRequests();
         const list = Array.isArray(data) ? data : data?.items || [];
+
         if (!alive) return;
         setRequests(list);
       } catch (e) {
@@ -74,6 +85,7 @@ export default function Dashboard() {
       try {
         setLoadingBal(true);
         setErrorBal("");
+
         const data = await getMyLeaveBalance(year);
         if (!alive) return;
         setBalance(data);
@@ -101,6 +113,40 @@ export default function Dashboard() {
     const approved = requests.filter((x) => x?.status === "APPROVED").length;
     const rejected = requests.filter((x) => x?.status === "REJECTED").length;
     return { submitted, approved, rejected };
+  }, [requests]);
+
+  const chartData = useMemo(() => {
+    const monthLabels = {
+      0: "Ian",
+      1: "Feb",
+      2: "Mar",
+      3: "Apr",
+      4: "Mai",
+      5: "Iun",
+      6: "Iul",
+      7: "Aug",
+      8: "Sep",
+      9: "Oct",
+      10: "Noi",
+      11: "Dec",
+    };
+
+    const counts = Array.from({ length: 12 }, (_, idx) => ({
+      month: monthLabels[idx],
+      cereri: 0,
+    }));
+
+    requests.forEach((r) => {
+      if (!r?.startDate) return;
+
+      const d = new Date(r.startDate);
+      if (Number.isNaN(d.getTime())) return;
+
+      const monthIndex = d.getMonth();
+      counts[monthIndex].cereri += 1;
+    });
+
+    return counts;
   }, [requests]);
 
   const co = useMemo(() => pickEntitlement(balance, "CO"), [balance]);
@@ -156,7 +202,47 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 2) Situația concediilor */}
+      {/* 2) Chart cereri pe luni */}
+      <div className="app-card p-3 mb-3">
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h5 className="mb-0">Cereri pe luni</h5>
+            <small className="text-muted">Distribuția cererilor în funcție de luna datei de început</small>
+          </div>
+        </div>
+
+        {loadingReq ? (
+          <div className="text-muted">Se încarcă graficul...</div>
+        ) : (
+          <ResponsiveContainer width="100%" height={320}>
+            <BarChart data={chartData}>
+              <CartesianGrid stroke="#e5e7eb" strokeDasharray="3 3" />
+              
+              <XAxis 
+                dataKey="month"
+                tick={{ fill: "#6b7280" }}
+                axisLine={{ stroke: "#d1d5db" }}
+              />
+
+              <YAxis
+                allowDecimals={false}
+                tick={{ fill: "#6b7280" }}
+                axisLine={{ stroke: "#d1d5db" }}
+              />
+
+              <Tooltip />
+
+              <Bar
+                dataKey="cereri"
+                fill="#0d6efd"
+                radius={[6, 6, 0, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+
+      {/* 3) Situația concediilor */}
       <div className="app-card p-3">
         <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
           <div>
@@ -166,7 +252,11 @@ export default function Dashboard() {
 
           <div style={{ maxWidth: 160 }}>
             <label className="form-label mb-1">An</label>
-            <input className="form-control form-control-sm" value={year} onChange={(e) => setYear(e.target.value)} />
+            <input
+              className="form-control form-control-sm"
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+            />
           </div>
         </div>
 
