@@ -1,4 +1,5 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { loginRequest } from "../api/auth.api";
@@ -18,6 +19,7 @@ export default function Login() {
 
     if (!identifier || !password) {
       setError("Completează email/username și parola.");
+      toast.error("Completează email/username și parola.");
       return;
     }
 
@@ -26,20 +28,22 @@ export default function Login() {
 
       const data = await loginRequest(identifier, password);
 
-      // Acceptăm 2 formate comune:
       const token = data.accessToken || data.token;
       const user = data.user || data;
 
       if (!token) {
         setError("Login eșuat: lipsă token în răspunsul backend.");
+        toast.error("Login eșuat.");
         return;
       }
       if (!user) {
         setError("Login eșuat: lipsă user în răspunsul backend.");
+        toast.error("Login eșuat.");
         return;
       }
 
       login({ token, user });
+      toast.success("Autentificare reușită.");
       navigate("/dashboard");
     } catch (err) {
       const msg =
@@ -47,6 +51,7 @@ export default function Login() {
         err?.response?.data?.error ||
         "Autentificare eșuată. Verifică datele sau conexiunea la server.";
       setError(msg);
+      toast.error("Autentificare eșuată.");
     } finally {
       setLoading(false);
     }

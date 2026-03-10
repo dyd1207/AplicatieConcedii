@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import PageContainer from "../components/layout/PageContainer";
 import StatusBadge from "../components/ui/StatusBadge";
 import { getLeaveRequests, approveLeaveRequest, rejectLeaveRequest } from "../api/leaveRequests.api";
@@ -33,6 +34,7 @@ export default function Avizare() {
         e?.response?.data?.error ||
         "Nu s-au putut încărca cererile.";
       setError(typeof msg === "string" ? msg : JSON.stringify(msg));
+      toast.error("Nu s-au putut încărca cererile.");
     } finally {
       setLoading(false);
     }
@@ -63,6 +65,7 @@ export default function Avizare() {
       setActingId(id);
       setError("");
       await approveLeaveRequest(id);
+      toast.success("Cererea a fost avizată.");
       await load();
     } catch (e) {
       const msg =
@@ -70,6 +73,7 @@ export default function Avizare() {
         e?.response?.data?.error ||
         "Nu s-a putut aviza cererea.";
       setError(typeof msg === "string" ? msg : JSON.stringify(msg));
+      toast.error("Nu s-a putut aviza cererea.");
     } finally {
       setActingId(null);
     }
@@ -88,6 +92,7 @@ export default function Avizare() {
       setActingId(rejectId);
       setError("");
       await rejectLeaveRequest(rejectId, rejectReason?.trim() || undefined);
+      toast.error("Cererea a fost respinsă.");
       setOpenReject(false);
       await load();
     } catch (e) {
@@ -96,6 +101,7 @@ export default function Avizare() {
         e?.response?.data?.error ||
         "Nu s-a putut respinge cererea.";
       setError(typeof msg === "string" ? msg : JSON.stringify(msg));
+      toast.error("Nu s-a putut respinge cererea.");
     } finally {
       setActingId(null);
     }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import PageContainer from "../components/layout/PageContainer";
 import Modal from "../components/ui/Modal";
 
@@ -23,7 +24,6 @@ function pickEntitlement(balance, type) {
 export default function Secretariat() {
   const currentYear = new Date().getFullYear();
 
-  // common
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -31,10 +31,8 @@ export default function Secretariat() {
   const [q, setQ] = useState("");
   const [savingId, setSavingId] = useState(null);
 
-  // view selector
-  const [view, setView] = useState("SUBSTITUTES"); // SUBSTITUTES | ENTITLEMENTS
+  const [view, setView] = useState("SUBSTITUTES");
 
-  // entitlement modal
   const [openEnt, setOpenEnt] = useState(false);
   const [entUser, setEntUser] = useState(null);
   const [entYear, setEntYear] = useState(String(currentYear));
@@ -60,6 +58,7 @@ export default function Secretariat() {
         e?.response?.data?.error ||
         "Nu s-au putut încărca utilizatorii.";
       setError(typeof msg === "string" ? msg : JSON.stringify(msg));
+      toast.error("Nu s-au putut încărca utilizatorii.");
     } finally {
       setLoading(false);
     }
@@ -67,7 +66,6 @@ export default function Secretariat() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filtered = useMemo(() => {
@@ -88,9 +86,6 @@ export default function Secretariat() {
     return `${name}${u?.username ? ` (${u.username})` : ""}`;
   };
 
-  // -------------------------
-  // Substitutes
-  // -------------------------
   const handleChangeSubstitute = async (userId, substituteIdRaw) => {
     const substituteId = substituteIdRaw ? Number(substituteIdRaw) : null;
 
@@ -98,6 +93,7 @@ export default function Secretariat() {
       setSavingId(userId);
       setError("");
       await setUserSubstitute(userId, substituteId);
+      toast.success("Înlocuitorul a fost salvat.");
       await load();
     } catch (e) {
       const msg =
@@ -105,14 +101,12 @@ export default function Secretariat() {
         e?.response?.data?.error ||
         "Nu s-a putut salva înlocuitorul.";
       setError(typeof msg === "string" ? msg : JSON.stringify(msg));
+      toast.error("Nu s-a putut salva înlocuitorul.");
     } finally {
       setSavingId(null);
     }
   };
 
-  // -------------------------
-  // Entitlements (CO/COR)
-  // -------------------------
   const openEntitlements = async (u) => {
     try {
       setError("");
@@ -135,6 +129,7 @@ export default function Secretariat() {
         e?.response?.data?.error ||
         "Nu s-au putut încărca drepturile.";
       setError(typeof msg === "string" ? msg : JSON.stringify(msg));
+      toast.error("Nu s-au putut încărca drepturile.");
       setOpenEnt(false);
     } finally {
       setEntLoading(false);
@@ -148,7 +143,6 @@ export default function Secretariat() {
       setError("");
       setEntSaving(true);
 
-      // CO
       await upsertUserEntitlement(entUser.id, {
         year: Number(entYear),
         type: "CO",
@@ -156,7 +150,6 @@ export default function Secretariat() {
         carryoverDays: Number(coCarry),
       });
 
-      // COR
       await upsertUserEntitlement(entUser.id, {
         year: Number(entYear),
         type: "COR",
@@ -164,6 +157,7 @@ export default function Secretariat() {
         carryoverDays: Number(corCarry),
       });
 
+      toast.success("Drepturile au fost salvate.");
       setOpenEnt(false);
     } catch (e) {
       const msg =
@@ -171,6 +165,7 @@ export default function Secretariat() {
         e?.response?.data?.error ||
         "Nu s-au putut salva drepturile.";
       setError(typeof msg === "string" ? msg : JSON.stringify(msg));
+      toast.error("Nu s-au putut salva drepturile.");
     } finally {
       setEntSaving(false);
     }
@@ -178,7 +173,6 @@ export default function Secretariat() {
 
   return (
     <PageContainer title="Secretariat">
-      {/* Header + dropdown view */}
       <div className="app-card p-3 mb-3">
         <div className="row g-2 align-items-end">
           <div className="col-md-4">
@@ -211,14 +205,10 @@ export default function Secretariat() {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      {/* Content */}
       <div className="app-card p-3">
         {loading ? (
           <div>Se încarcă utilizatorii...</div>
         ) : view === "SUBSTITUTES" ? (
-          // -------------------------
-          // TABLE: SUBSTITUTES
-          // -------------------------
           <div className="table-responsive">
             <table className="table table-hover align-middle mb-0">
               <thead>
@@ -275,9 +265,6 @@ export default function Secretariat() {
             </table>
           </div>
         ) : (
-          // -------------------------
-          // TABLE: ENTITLEMENTS
-          // -------------------------
           <div className="table-responsive">
             <table className="table table-hover align-middle mb-0">
               <thead>
@@ -323,7 +310,6 @@ export default function Secretariat() {
         )}
       </div>
 
-      {/* Modal: entitlements */}
       <Modal
         title={`Drepturi concediu — ${entUser?.fullName || ""}`}
         open={openEnt}

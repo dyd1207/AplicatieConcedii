@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import PageContainer from "../components/layout/PageContainer";
 import StatusBadge from "../components/ui/StatusBadge";
 import { getLeaveRequests, createLeaveRequest, submitLeaveRequest } from "../api/leaveRequests.api";
@@ -35,6 +36,7 @@ export default function Cereri() {
         e?.response?.data?.error ||
         "Nu s-au putut încărca cererile.";
       setError(typeof msg === "string" ? msg : JSON.stringify(msg));
+      toast.error("Nu s-au putut încărca cererile.");
     } finally {
       setLoading(false);
     }
@@ -59,6 +61,7 @@ export default function Cereri() {
       setError("");
 
       await createLeaveRequest(payload);
+      toast.success("Cererea a fost creată.");
       setOpenNew(false);
 
       await loadRequests();
@@ -68,6 +71,7 @@ export default function Cereri() {
         e?.response?.data?.error ||
         "Nu s-a putut crea cererea.";
       setError(typeof msg === "string" ? msg : JSON.stringify(msg));
+      toast.error("Nu s-a putut crea cererea.");
     } finally {
       setSaving(false);
     }
@@ -79,6 +83,7 @@ export default function Cereri() {
       setError("");
 
       await submitLeaveRequest(id);
+      toast.success("Cererea a fost trimisă spre aprobare.");
       await loadRequests();
     } catch (e) {
       const msg =
@@ -86,6 +91,7 @@ export default function Cereri() {
         e?.response?.data?.error ||
         "Nu s-a putut trimite cererea.";
       setError(typeof msg === "string" ? msg : JSON.stringify(msg));
+      toast.error("Nu s-a putut trimite cererea.");
     } finally {
       setSubmittingId(null);
     }
