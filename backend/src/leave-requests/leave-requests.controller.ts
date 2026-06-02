@@ -42,10 +42,30 @@ export class LeaveRequestsController {
     return this.svc.reject(req.user.sub, id, body?.reason);
   }
 
+  // Avizare: SEF_STRUCTURA, SECRETARIAT, DIRECTOR_ADJUNCT
+  @Post(":id/endorse")
+  @Roles("SEF_STRUCTURA", "SECRETARIAT", "DIRECTOR_ADJUNCT")
+  @UseGuards(RolesGuard)
+  endorse(@Req() req: any, @Param("id", ParseIntPipe) id: number) {
+    return this.svc.endorse(req.user.sub, id);
+  }
+
+  // Respingere la avizare: SEF_STRUCTURA, SECRETARIAT, DIRECTOR_ADJUNCT
+  @Post(":id/endorse-reject")
+  @Roles("SEF_STRUCTURA", "SECRETARIAT", "DIRECTOR_ADJUNCT")
+  @UseGuards(RolesGuard)
+  endorseReject(
+    @Req() req: any,
+    @Param("id", ParseIntPipe) id: number,
+    @Body() body: { reason?: string }
+  ) {
+    return this.svc.endorseReject(req.user.sub, id, body?.reason);
+  }
+
   // Întrerupere: Director / Director Adjunct / Șef structură / Secretariat
   @Post(":id/interrupt")
-  @UseGuards(RolesGuard)
   @Roles("DIRECTOR", "DIRECTOR_ADJUNCT", "SEF_STRUCTURA", "SECRETARIAT")
+  @UseGuards(RolesGuard)
   interrupt(@Req() req: any, @Param("id", ParseIntPipe) id: number, @Body() body: { reason?: string }) {
     return this.svc.interrupt(req.user.sub, id, body?.reason);
   }

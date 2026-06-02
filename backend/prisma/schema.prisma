@@ -14,6 +14,7 @@ enum LeaveType {
 enum RequestStatus {
   DRAFT
   SUBMITTED
+  ENDORSED
   APPROVED
   REJECTED
   CANCELLED
@@ -27,16 +28,16 @@ model User {
   fullName            String
   password            String
   isActive            Boolean        @default(true)
-  interruptedRequests LeaveRequest[] @relation("InterruptedBy")
 
-  // Inlocuitor optional
   substituteId  Int?
   substitute    User?  @relation("UserSubstitute", fields: [substituteId], references: [id])
   substitutedBy User[] @relation("UserSubstitute")
 
-  roles            UserRole[]
-  requests         LeaveRequest[] @relation("RequesterRequests")
-  approvedRequests LeaveRequest[] @relation("ApprovedBy")
+  roles                UserRole[]
+  requests             LeaveRequest[] @relation("RequesterRequests")
+  approvedRequests     LeaveRequest[] @relation("ApprovedBy")
+  interruptedRequests  LeaveRequest[] @relation("InterruptedBy")
+  endorsedRequests     LeaveRequest[] @relation("EndorsedBy")  // ← adăugat
 
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
@@ -45,7 +46,7 @@ model User {
 
 model Role {
   id    Int        @id @default(autoincrement())
-  code  String     @unique // ANGAJAT, SECRETARIAT, SEF_STRUCTURA, DIRECTOR_ADJUNCT, DIRECTOR, ADMINISTRATOR
+  code  String     @unique
   name  String
   users UserRole[]
 }
@@ -77,18 +78,23 @@ model LeaveRequest {
   approvedById Int?
   approvedBy   User? @relation("ApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
   interruptedAt   DateTime?
   interruptedById Int?
-  interruptedBy   User?     @relation("InterruptedBy", fields: [interruptedById], references: [id], onDelete: SetNull)
+  interruptedBy   User? @relation("InterruptedBy", fields: [interruptedById], references: [id], onDelete: SetNull)
+
+  endorsedById Int?                                                                    // ← adăugat
+  endorsedBy   User?     @relation("EndorsedBy", fields: [endorsedById], references: [id], onDelete: SetNull)  // ← adăugat
+  endorsedAt   DateTime?                                                               // ← adăugat
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([requesterId])
   @@index([status])
   @@index([type])
   @@index([approvedById])
   @@index([interruptedById])
+  @@index([endorsedById])  // ← adăugat
 }
 
 model LeaveEntitlement {
@@ -98,14 +104,11 @@ model LeaveEntitlement {
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   year Int
-  type LeaveType // CO sau COR
+  type LeaveType
 
-  // drepturi
-  annualDays    Int @default(0) // drept anual
-  carryoverDays Int @default(0) // restanțe (din ani anteriori)
-
-  // consum (stocat pentru performanță/rapoarte)
-  usedDays Int @default(0)
+  annualDays    Int @default(0)
+  carryoverDays Int @default(0)
+  usedDays      Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -3,7 +3,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { LeaveBalanceService } from "../leave-balance/leave-balance.service";
 
 type LeaveType = "CO" | "COR";
-type RequestStatus = "DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED" | "CANCELLED" | "INTERRUPTED";
+type RequestStatus = "DRAFT" | "SUBMITTED" | "ENDORSED" | "APPROVED" | "REJECTED" | "CANCELLED" | "INTERRUPTED";
 
 function diffDays(start: Date, end: Date): number {
   const ms = end.getTime() - start.getTime();
@@ -33,7 +33,6 @@ export class LeaveRequestsService {
     }
     if (end < start) throw new BadRequestException("endDate nu poate fi înainte de startDate.");
 
-    // (opțional, recomandat) prevenim cereri pe ani diferiți pentru simplificare sold
     if (start.getFullYear() !== end.getFullYear()) {
       throw new BadRequestException("Cererea nu poate traversa ani diferiți (depune cereri separate).");
     }
@@ -70,7 +69,7 @@ export class LeaveRequestsService {
     return this.prisma.$transaction(async (tx) => {
       const req = await tx.leaveRequest.findUnique({ where: { id: requestId } });
       if (!req) throw new NotFoundException("Cerere inexistentă.");
-      if (req.status !== "SUBMITTED") throw new BadRequestException("Doar cererile trimise pot fi aprobate.");
+      if (req.status !== "ENDORSED") throw new BadRequestException("Doar cererile avizate pot fi aprobate.");
 
       const year = req.startDate.getFullYear();
       if (year !== req.endDate.getFullYear()) {
@@ -96,7 +95,7 @@ export class LeaveRequestsService {
   async reject(approverId: number, requestId: number, reason?: string) {
     const req = await this.prisma.leaveRequest.findUnique({ where: { id: requestId } });
     if (!req) throw new NotFoundException("Cerere inexistentă.");
-    if (req.status !== "SUBMITTED") throw new BadRequestException("Doar cererile trimise pot fi respinse.");
+    if (req.status !== "ENDORSED") throw new BadRequestException("Doar cererile avizate pot fi respinse.");
 
     return this.prisma.leaveRequest.update({
       where: { id: requestId },
@@ -138,6 +137,36 @@ export class LeaveRequestsService {
       });
 
       return { updated, effectiveDays, refundDays };
+    });
+  }
+
+  async endorse(endorserId: number, requestId: number) {
+    const req = await this.prisma.leaveRequest.findUnique({ where: { id: requestId } });
+    if (!req) throw new NotFoundException("Cerere inexistentă.");
+    if (req.status !== "SUBMITTED") throw new BadRequestException("Doar cererile trimise pot fi avizate.");
+
+    return this.prisma.leaveRequest.update({
+      where: { id: requestId },
+      data: {
+        status: "ENDORSED",
+        endorsedById: endorserId,
+        endorsedAt: new Date(),
+      },
+    });
+  }
+
+  async endorseReject(endorserId: number, requestId: number, reason?: string) {
+    const req = await this.prisma.leaveRequest.findUnique({ where: { id: requestId } });
+    if (!req) throw new NotFoundException("Cerere inexistentă.");
+    if (req.status !== "SUBMITTED") throw new BadRequestException("Doar cererile trimise pot fi respinse la avizare.");
+
+    return this.prisma.leaveRequest.update({
+      where: { id: requestId },
+      data: {
+        status: "REJECTED",
+        endorsedById: endorserId,      // ← corectat din approvedById
+        reason: reason ?? req.reason,
+      },
     });
   }
 
@@ -197,9 +226,10 @@ export class LeaveRequestsService {
         skip,
         take: pageSize,
         include: {
-          requester: { select: { id: true, username: true, fullName: true } },
-          approvedBy: { select: { id: true, username: true, fullName: true } },
+          requester:     { select: { id: true, username: true, fullName: true } },
+          approvedBy:    { select: { id: true, username: true, fullName: true } },
           interruptedBy: { select: { id: true, username: true, fullName: true } },
+          endorsedBy:    { select: { id: true, username: true, fullName: true } }, // ← adăugat
         },
       }),
       this.prisma.leaveRequest.count({ where }),
